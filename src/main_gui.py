@@ -38,7 +38,6 @@ class InfoDialog(QDialog):
 class PDFSplitWorker(QThread):
     finished = pyqtSignal()
     error_occurred = pyqtSignal(Exception)
-    progress = pyqtSignal(int)  # Signal for progress updates
 
     def __init__(self, file_path, start_page, end_page, output_pdf):
         super().__init__()
@@ -104,10 +103,6 @@ class MainWindow(QMainWindow):
         btn_split.clicked.connect(self.split_the_pdf)
         layout4.addWidget(btn_split)
 
-        # Progress bar
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)  # Hidden by default
-
         # Status update label
         self.label_status = QLabel("Ready")
         self.label_status.setFixedSize(100, 25)
@@ -119,7 +114,6 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(layout3)
         main_layout.addLayout(layout4)
         main_layout.addWidget(self.label_status, alignment=Qt.AlignLeft)
-        main_layout.addWidget(self.progress_bar)
 
         widget = QWidget()
         widget.setLayout(main_layout)
@@ -168,30 +162,22 @@ class MainWindow(QMainWindow):
 
         # Update status and start the PDF splitting in a background thread
         self.update_status("Splitting...")
-        self.progress_bar.setVisible(True)
-        self.progress_bar.setValue(0)
 
         self.worker = PDFSplitWorker(file_path, self.start_page_number, self.end_page_number, output_file)
         self.worker.finished.connect(self.on_split_finished)
         self.worker.error_occurred.connect(self.on_split_error)
-        self.worker.progress.connect(self.update_progress)  # Connect progress signal
         self.worker.start()
 
     def on_split_finished(self):
         self.update_status("Ready")
-        self.progress_bar.setVisible(False)
         InfoDialog("PDF Split Successful!").exec()
 
     def on_split_error(self, e):
         self.update_status("Ready")
-        self.progress_bar.setVisible(False)
         ErrorDialog(e, self).exec()
 
     def update_status(self, message):
         self.label_status.setText(message)
-
-    def update_progress(self, value):
-        self.progress_bar.setValue(value)
 
 
 if __name__ == "__main__":
